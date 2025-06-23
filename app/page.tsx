@@ -151,6 +151,38 @@ export default function ArbiMintApp() {
   const [usdValue, setUsdValue] = useState(0)
   const [expectedProfit, setExpectedProfit] = useState(0)
   const [priceLoading, setPriceLoading] = useState(true)
+  const [selectedChain, setSelectedChain] = useState("Ethereum")
+  const [externalPrice, setExternalPrice] = useState(0) // For profit calculation
+
+  // Placeholder: List of supported chains
+  const supportedChains = [
+    { name: "Ethereum", rpc: "https://mainnet.infura.io/v3/" },
+    { name: "Polygon", rpc: "https://polygon-rpc.com/" },
+    { name: "Arbitrum", rpc: "https://arb1.arbitrum.io/rpc" },
+    { name: "Optimism", rpc: "https://mainnet.optimism.io" },
+    { name: "Binance Smart Chain", rpc: "https://bsc-dataseed.binance.org/" },
+    { name: "Avalanche", rpc: "https://api.avax.network/ext/bc/C/rpc" },
+  ]
+
+  // Placeholder: Fetch tokens from UniswapV4Factory based on selectedChain
+  // TODO: Implement actual on-chain fetch using ethers.js and UniswapV4Factory ABI
+  const fetchTokensFromUniswap = async (chain: string) => {
+    // Example: Use ethers.js to connect to the correct RPC and UniswapV4Factory
+    // For now, just log and do nothing
+    console.log(`Would fetch tokens for chain: ${chain}`)
+    // setTokens(fetchedTokens)
+  }
+
+  useEffect(() => {
+    fetchTokensFromUniswap(selectedChain)
+  }, [selectedChain])
+
+  // Placeholder: Fetch external price for profit calculation
+  useEffect(() => {
+    // In real implementation, fetch from an external source (e.g., another DEX or oracle)
+    // For now, mock as selectedToken.price * 0.98 (simulate a 2% lower price elsewhere)
+    setExternalPrice(selectedToken.price * 0.98)
+  }, [selectedToken, priceLoading])
 
   // Fetch real-time prices from CoinGecko API
   const fetchTokenPrices = async () => {
@@ -386,6 +418,8 @@ export default function ArbiMintApp() {
         <div className="flex-1 flex items-center justify-center px-2 sm:px-4">
           <Card className="w-full max-w-sm sm:max-w-md bg-gray-800/50 border-gray-600 backdrop-blur-sm">
             <CardContent className="p-4 sm:p-6 lg:p-8 space-y-6">
+              {/* Note about Token-2 (USDC) - now centered and in place of Ethereum Mainnet badge */}
+              <div className="text-xs text-blue-400 mb-2 text-center">Token-2 is <b>USDC</b> by default. Please select Token-1 from the dropdown below.</div>
               {/* Amount Input */}
               <div className="space-y-3">
                 <label className="text-xs sm:text-sm text-gray-400 block">Amount To Be Minted</label>
@@ -402,9 +436,8 @@ export default function ArbiMintApp() {
                   </div>
                 </div>
               </div>
-
               {/* Token Selection - Fixed alignment */}
-              <div className="flex justify-end items-center">
+              <div className="flex justify-end items-center mb-2">
                 <Select
                   value={selectedToken.symbol}
                   onValueChange={(value) => {
@@ -422,6 +455,7 @@ export default function ArbiMintApp() {
                     </div>
                   </SelectTrigger>
                   <SelectContent className="bg-gray-800 border-gray-600 max-h-60 overflow-y-auto">
+                    {/* TODO: Improve listing by fetching from UniswapV4Factory */}
                     {tokens.map((token) => (
                       <SelectItem key={token.symbol} value={token.symbol} className="cursor-pointer">
                         <div className="flex items-center justify-between w-full min-w-[160px]">
@@ -441,51 +475,26 @@ export default function ArbiMintApp() {
                   </SelectContent>
                 </Select>
               </div>
-
-              {/* Chain Info - Now clickable */}
-              <div className="text-center py-2">
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Badge
-                      variant="outline"
-                      className="border-gray-600 text-gray-300 text-xs sm:text-sm hover:bg-gray-700 hover:text-white cursor-pointer transition-colors"
-                    >
-                      <Network className="w-3 h-3 mr-1" />
-                      Ethereum Mainnet
-                    </Badge>
-                  </DialogTrigger>
-                  <DialogContent className="bg-gray-900 border-gray-700 mx-4 sm:mx-0">
-                    <DialogHeader>
-                      <DialogTitle className="text-white">Network Information</DialogTitle>
-                    </DialogHeader>
-                    <div className="text-gray-300 space-y-4">
-                      <p>
-                        Currently, ArbiMint only supports <strong>Ethereum Mainnet</strong> arbitrage opportunities.
-                      </p>
-                      <p>We are actively working on expanding to multiple chains including:</p>
-                      <ul className="list-disc list-inside space-y-1 text-sm">
-                        <li>Polygon</li>
-                        <li>Arbitrum</li>
-                        <li>Optimism</li>
-                        <li>Binance Smart Chain</li>
-                        <li>Avalanche</li>
-                      </ul>
-                      <p className="text-blue-400 font-medium">
-                        🚀 Multichain support is coming soon in our future updates!
-                      </p>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+              {/* Chain Selection Dropdown - now below token dropdown, slightly smaller width */}
+              <div className="mb-2 flex justify-end">
+                <select
+                  className="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white"
+                  style={{ minWidth: '130px', maxWidth: '160px' }}
+                  value={selectedChain}
+                  onChange={e => setSelectedChain(e.target.value)}
+                >
+                  {supportedChains.map(chain => (
+                    <option key={chain.name} value={chain.name}>{chain.name}</option>
+                  ))}
+                </select>
               </div>
-
-              {/* Expected Profit */}
+              {/* Expt. Profit (single profit field, correct formula) */}
               <div className="flex justify-between items-center py-4 border-t border-gray-700">
                 <span className="text-gray-400 text-sm sm:text-base">Expt. Profit</span>
                 <span className="text-lg sm:text-xl font-bold text-green-400">
-                  {priceLoading ? "..." : `$${expectedProfit.toFixed(2)}`}
+                  {priceLoading ? "..." : `$${((Number(amount) || 0) * (selectedToken.price - externalPrice)).toFixed(2)}`}
                 </span>
               </div>
-
               {/* Action Button */}
               <Button
                 onClick={handleMintAndArbitrage}
