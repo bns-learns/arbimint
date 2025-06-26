@@ -1,4 +1,3 @@
-
 // config/index.tsx
 
 import { cookieStorage, createStorage, http } from '@wagmi/core'
